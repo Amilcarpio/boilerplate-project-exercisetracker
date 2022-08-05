@@ -1,0 +1,60 @@
+const express = require('express')
+const app = express()
+const cors = require('cors')
+const mongoose = require('mongoose')
+const bodyParser = require('body-parser')
+require('dotenv').config()
+
+mongoose.connect(process.env.DB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, (err) => {
+  if(err){
+    console.log(err)
+  }else{
+    console.log('Connected to MongoDB.')
+  }
+})
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(bodyParser.json())
+app.use(cors())
+app.use(express.static('public'))
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/views/index.html')
+});
+
+const listener = app.listen(process.env.PORT || 3000, () => {
+  console.log('Your app is listening on port ' + listener.address().port)
+})
+
+const { Schema } = mongoose;
+
+const UserSchema = new Schema({
+  username: String
+})
+const User = mongoose.model("User", UserSchema)
+
+const LogSchema = new Schema({
+  userid: String,
+  username: String,
+  description: String,
+  duration: Number,
+  date: {type: Date, default: Date.now}
+})
+
+const Log = mongoose.model('Log', LogSchema)
+
+app.post("/api/users", async (req, res) => {
+  let newUser = new User({
+    username: req.body.username
+  })
+
+  try{
+    await newUser.save()
+    res.json({
+      username: newUser.username, 
+      _id: newUser._id
+    })
+  } catch(error) {
+    res.json({
+      error: error.message
+    })
+  }
+})
